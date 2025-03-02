@@ -1,0 +1,113 @@
+﻿/* تعريف المتغيرات الأساسية */
+:root {
+  background-color: #fdfdfd; /* خلفية off-white */
+    --text-color: #1c1c1c; /* لون نص داكن */
+    --accent-color: #74b9ff; /* لون أزرق فاتح للإبراز عند hover */
+    --btn-primary-bg: #0d6efd; /* زر أزرق */
+    --btn-success-bg: #198754; /* زر أخضر */
+    --btn-danger-bg: #dc3545; /* زر أحمر */
+    font-family: 'Changa', sans-serif;
+}
+
+/* تطبيق الأساسيات */
+body {
+   background-color: #fdfdfd;
+    color: var(--text-color);
+    direction: rtl;
+    text-align: right;
+}
+
+/* الحاوية الرئيسية */
+.app-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* تنسيق الهيدر */
+.app-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+    .app-header h1 {
+        font-size: 2.5rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+/* قائمة التنقل */
+.app-nav {
+    margin-bottom: 2rem;
+}
+
+    .app-nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .app-nav li {
+        margin: 0;
+    }
+
+    .app-nav a {
+        text-decoration: none;
+        color: var(--text-color);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+        .app-nav a:hover {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+/* المحتوى الرئيسي */
+.app-main {
+    min-height: 70vh;
+}
+
+/* التذييل */
+.app-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #ccc;
+    font-size: 0.9rem;
+    color: #B8860B;
+}
+
+/* تنسيق الأزرار */
+.btn-primary {
+    background-color: var(--btn-primary-bg) !important;
+    border-color: var(--btn-primary-bg) !important;
+}
+
+.btn-success {
+    background-color: var(--btn-success-bg) !important;
+    border-color: var(--btn-success-bg) !important;
+}
+
+.btn-danger {
+    background-color: var(--btn-danger-bg) !important;
+    border-color: var(--btn-danger-bg) !important;
+}
+
+/* تنسيق البطاقات */
+.card {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* ضبط عناوين الصفحات */
+h2, h3, h4, h5, h6 {
+    text-align: right;
+}

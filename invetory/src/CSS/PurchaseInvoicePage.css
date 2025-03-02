@@ -1,0 +1,55 @@
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.form-select,
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+button.add-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+    button.add-btn:hover {
+        background-color: #218838;
+    }
+
+button.save-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+    button.save-btn:hover {
+        background-color: #0056b3;
+    }
+
+.new-supplier input {
+    width: 48%;
+    display: inline-block;
+    margin-right: 4%;
+}
+
+    .new-supplier input:last-child {
+        margin-right: 0;
+    }

@@ -1,0 +1,12 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Changa:wght@200;300;400;500;600;700;800&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #fdfdfd !important; /* لون أوف وايت */
+    /*background-color: #fdfdfd;*/ /* خلفية off-white */
+    color: #1c1c1c; /* نص داكن */
+    font-family: 'Changa', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
