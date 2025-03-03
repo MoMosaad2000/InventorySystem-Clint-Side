@@ -1,11 +1,20 @@
-﻿import { defineConfig } from 'vite';
-import plugin from '@vitejs/plugin-react';
+﻿import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-    plugins: [plugin()],
-    server: {
-        host: 'localhost', // استخدم localhost فقط
-        port: 3000, // المنفذ الجديد
-        strictPort: true, // إجبار Vite على استخدام هذا المنفذ فقط
+    // قل لـ Vite إن الجذر هو المجلد public
+    root: 'public',
+
+    plugins: [react()],
+
+    build: {
+        // سيُنتِج ملفات البناء النهائي في مجلد dist أعلى public
+        outDir: '../dist',
+        emptyOutDir: true,
     },
-});
+    server: {
+        // إذا أردت ضبط المنفذ أو أي إعدادات أخرى
+        port: 3000,
+        strictPort: true
+    }
+})
