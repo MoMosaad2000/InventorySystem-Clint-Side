@@ -1,0 +1,25 @@
+export async function handler(event, context) {
+  // نستخدم هنا عنوان الـ API غير الآمن
+  const endpoint = "http://inventory2025.runasp.net/api/";
+  // الحصول على مسار الـ endpoint من الـ query string (مثل warehouses)
+  const path = event.queryStringParameters.path || "";
+  
+  try {
+    const response = await fetch(`${endpoint}${path}`, {
+      method: event.httpMethod,
+      headers: event.headers,
+      body: event.httpMethod !== "GET" ? event.body : undefined,
+    });
+    const data = await response.text();
+    return {
+      statusCode: response.status,
+      body: data,
+      headers: { "Content-Type": "application/json" }
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+}
