@@ -1,8 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "http://inventory2025.runasp.net/api/";
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function ProductsPage() {
     const [categories, setCategories] = useState([]);
@@ -20,6 +19,7 @@ function ProductsPage() {
         unit: "حبة",
         imageUrl: "",
         subCategoryId: "",
+        colorCode: "" // الخاصية الجديدة
     });
 
     useEffect(() => {
@@ -79,24 +79,23 @@ function ProductsPage() {
             alert("⚠️ يرجى ملء جميع الحقول المطلوبة.");
             return;
         }
-
         try {
-            const response = await axios.post(`${API_BASE_URL}products`, {
+            const productData = {
                 name: newProduct.name,
                 code: newProduct.code,
                 description: newProduct.description || "",
                 unit: newProduct.unit,
                 imageUrl: newProduct.imageUrl || "",
                 subCategoryId: parseInt(selectedSubCategory),
-                warehouseId: parseInt(selectedWarehouse) // ✅ إرسال `warehouseId` فقط
-            });
+                warehouseId: parseInt(selectedWarehouse),
+                colorCode: newProduct.colorCode || ""
+            };
 
+            const response = await axios.post(`${API_BASE_URL}products`, productData);
             if (response.status === 201) {
                 console.log("✅ المنتج أُضيف بنجاح:", response.data);
-
-                fetchProducts(); // ✅ تحديث المنتجات بعد الإضافة
-                fetchWarehouses(); // ✅ تحديث المستودعات بعد الإضافة
-
+                fetchProducts();
+                fetchWarehouses();
                 setNewProduct({
                     name: "",
                     code: "",
@@ -104,8 +103,8 @@ function ProductsPage() {
                     unit: "حبة",
                     imageUrl: "",
                     subCategoryId: "",
+                    colorCode: ""
                 });
-
                 alert(`✅ المنتج "${newProduct.name}" أُضيف بنجاح إلى المستودع!`);
             }
         } catch (error) {
@@ -121,7 +120,7 @@ function ProductsPage() {
                 <div className="col">
                     <label>التصنيف الرئيسي:</label>
                     <select className="form-select" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
-                        <option value="">أختر التنصيف الرئيسي </option>
+                        <option value="">أختر التصنيف الرئيسي</option>
                         {categories.map((category) => (
                             <option key={category.id} value={category.id}>
                                 {category.name}
@@ -132,7 +131,7 @@ function ProductsPage() {
                 <div className="col">
                     <label>التصنيف الفرعي:</label>
                     <select className="form-select" value={selectedSubCategory} onChange={(e) => setSelectedSubCategory(e.target.value)}>
-                        <option value="">أختر التصنيف الفرعي  </option>
+                        <option value="">أختر التصنيف الفرعي</option>
                         {subCategories.map((subCategory) => (
                             <option key={subCategory.id} value={subCategory.id}>
                                 {subCategory.name}
@@ -141,7 +140,6 @@ function ProductsPage() {
                     </select>
                 </div>
             </div>
-
             <div className="row mb-3">
                 <div className="col">
                     <label>أسم الصنف:</label>
@@ -173,19 +171,23 @@ function ProductsPage() {
                     <input type="text" className="form-control" value={newProduct.imageUrl} onChange={(e) => setNewProduct({ ...newProduct, imageUrl: e.target.value })} />
                 </div>
                 <div className="col">
+                    <label>كود اللون:</label>
+                    <input type="text" className="form-control" placeholder="مثال: #FF5733" value={newProduct.colorCode} onChange={(e) => setNewProduct({ ...newProduct, colorCode: e.target.value })} />
+                </div>
+                <div className="col">
                     <label>المستودع:</label>
                     <select className="form-select" value={selectedWarehouse} onChange={(e) => setSelectedWarehouse(e.target.value)}>
-                        <option value="">أختر مستودع </option>
+                        <option value="">أختر مستودع</option>
                         {warehouses.map((warehouse) => (
-                            <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
+                            <option key={warehouse.id} value={warehouse.id}>
+                                {warehouse.name}
+                            </option>
                         ))}
                     </select>
                 </div>
             </div>
-
-            <button className="btn btn-success me-2" onClick={handleAddProduct}>إضافة صنف </button>
+            <button className="btn btn-success me-2" onClick={handleAddProduct}>إضافة صنف</button>
             <button className="btn btn-primary ms-2 me-2" onClick={() => setShowProducts(!showProducts)}>معاينة</button>
-
             {showProducts && (
                 <div className="mt-4">
                     <h2>قائمة الأصناف</h2>
@@ -194,7 +196,8 @@ function ProductsPage() {
                             <tr>
                                 <th>اسم الصنف</th>
                                 <th>كود الصنف</th>
-                                <th>وحدة</th>
+                                <th>الوحدة</th>
+                                <th>كود اللون</th>
                                 <th>مستودع رقم</th>
                             </tr>
                         </thead>
@@ -204,6 +207,7 @@ function ProductsPage() {
                                     <td>{product.name}</td>
                                     <td>{product.code}</td>
                                     <td>{product.unit}</td>
+                                    <td>{product.colorCode}</td>
                                     <td>{product.warehouseId}</td>
                                 </tr>
                             ))}

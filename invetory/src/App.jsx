@@ -7,18 +7,23 @@ import StockTransfer from "./pages/StockTransfer";
 import StockInVoucherPage from "./pages/StockInVoucherPage";
 import StockOutVoucherPage from "./pages/StockOutVoucher";
 import PurchaseInvoicePage from "./pages/PurchaseInvoicePage ";
-
+import WarehouseReport from "./pages/WarehouseReport";
+import StockReport from "./pages/StockReport";
 // استيراد Bootstrap إذا كنت تستخدمه
 import "bootstrap/dist/css/bootstrap.min.css";
 // استيراد ملف التنسيقات الخاص بنا
 import "./App.css";
-
+import logo from "./images/logo.png";
 function App() {
     return (
         <Router>
             {/* حاوية رئيسية */}
             <div className="container my-app-container">
-                <h2 className="app-title">سيستم إدارة مخزون</h2>
+                <div className="app-header d-flex align-items-center justify-content-between">
+                    <h2 className="app-title">شركة مصنع أريكة فرح</h2>
+                    <img src={logo} alt="Logo" className="app-logo" />
+                  
+                </div>
 
                 {/* قائمة تنقل علوية */}
                 <nav>
@@ -63,6 +68,16 @@ function App() {
                                 فاتورة مشتريات
                             </Link>
                         </li>
+                        <li className="nav-item">
+                            <Link className="nav-link" to="/Stock-report">
+                                تقرير الصنف
+                            </Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link className="nav-link" to="/Warehouse-report">
+                                تقرير المخزن
+                            </Link>
+                        </li>
                     </ul>
                 </nav>
 
@@ -78,6 +93,8 @@ function App() {
                         <Route path="/stock-in-voucher" element={<StockInVoucherPage />} />
                         <Route path="/stock-out-voucher" element={<StockOutVoucherPage />} />
                         <Route path="/purchase-in-voice" element={<PurchaseInvoicePage />} />
+                        <Route path="/Stock-report" element={<StockReport />} />
+                        <Route path="/Warehouse-report" element={<WarehouseReport />} />
                     </Routes>
                 </main>
                 <footer className="app-footer">

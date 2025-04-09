@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "http://inventory2025.runasp.net/api/";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function StockTransferPage() {
@@ -16,12 +17,17 @@ function StockTransferPage() {
     const [selectedProduct, setSelectedProduct] = useState("");
     const [quantity, setQuantity] = useState(0);
     const [transferDate, setTransferDate] = useState(new Date().toISOString().slice(0, 10));
+
+    const [operatingOrder, setOperatingOrder] = useState("");
+    const [itemColor, setItemColor] = useState("");
+    const [notes, setNotes] = useState("");
+
     const [showTable, setShowTable] = useState(false);
     const [warehouseKeeperName, setWarehouseKeeperName] = useState("");
     const [tableData, setTableData] = useState([]);
     const [stockTransfers, setStockTransfers] = useState([]); // To store all stock transfers
     const [stockTransferId, setStockTransferId] = useState(""); // ID البحث
-     
+
     useEffect(() => {
         fetchWarehouses();
         fetchCategories();
@@ -56,6 +62,7 @@ function StockTransferPage() {
             console.error("Error fetching subcategories:", error);
         }
     };
+
 
     const fetchProducts = async () => {
         try {
@@ -124,15 +131,14 @@ function StockTransferPage() {
         //    transfer.toWarehouseId === parseInt(selectedWarehouseTo))
         //);
         const response = await axios.get(`${API_BASE_URL}StockTransfer`);
-        const allStockInVouchers = response.data?.$values || [];
+        const allTransfers = response.data?.$values || [];
 
-        if (allStockInVouchers.length === 0) {
+        if (allTransfers.length === 0) {
             alert("⚠️ لا يوجد بيانات متاحة للعرض!");
             setTableData([]);
             return;
         }
-
-        const tableRows = allStockInVouchers.flatMap((transfer) =>
+        const tableRows = allTransfers.flatMap((transfer) =>
             transfer.items?.$values.map((item) => ({
                 id: transfer.id,
                 product: item.product.name,
@@ -142,7 +148,10 @@ function StockTransferPage() {
                 fromWarehouse: warehouses.find(w => w.id === transfer.fromWarehouseId)?.name || "غير محدد",
                 toWarehouse: warehouses.find(w => w.id === transfer.toWarehouseId)?.name || "غير محدد",
                 price: productPriceMap[item.productId] || 0,
-                totalCost: item.quantity * (productPriceMap[item.productId] || 0)
+                totalCost: item.quantity * (productPriceMap[item.productId] || 0),
+                operatingOrder: transfer.operatingOrder || "",
+                notes: transfer.notes || "",
+                colorCode: item.colorCode || ""
             }))
         );
 
@@ -176,7 +185,10 @@ function StockTransferPage() {
                 fromWarehouse: warehouses.find(w => w.id === transferData.fromWarehouseId)?.name || "غير محدد",
                 toWarehouse: warehouses.find(w => w.id === transferData.toWarehouseId)?.name || "غير محدد",
                 price: productPriceMap[item.productId] || 0,
-                totalCost: item.quantity * (productPriceMap[item.productId] || 0)
+                totalCost: item.quantity * (productPriceMap[item.productId] || 0),
+                operatingOrder: transferData.operatingOrder || "",
+                notes: transferData.notes || "",
+                colorCode: item.colorCode || ""
             }));
 
             setTableData(tableRows);
@@ -194,22 +206,24 @@ function StockTransferPage() {
             return;
         }
         try {
-            const selectedProductName = products.find(p => p.id == selectedProduct)?.name;
-            const selectedWarehouseFromName = warehouses.find(w => w.id == selectedWarehouseFrom)?.name;
-            const selectedWarehouseToName = warehouses.find(w => w.id == selectedWarehouseTo)?.name;
+            //const selectedProductName = products.find(p => p.id == selectedProduct)?.name;
+            //const selectedWarehouseFromName = warehouses.find(w => w.id == selectedWarehouseFrom)?.name;
+            //const selectedWarehouseToName = warehouses.find(w => w.id == selectedWarehouseTo)?.name;
 
             const transferData = {
                 fromWarehouseId: parseInt(selectedWarehouseFrom),
                 toWarehouseId: parseInt(selectedWarehouseTo),
                 warehouseKeeperName: warehouseKeeperName,
                 transferDate: transferDate,
-                notes: `نقل ${quantity} من المنتج ${selectedProductName} من مستودع ${selectedWarehouseFromName} إلى مستودع ${selectedWarehouseToName}`,
+                operatingOrder: operatingOrder, // أمر التشغيل من state
+                notes: notes,
                 items: [
                     {
                         productId: parseInt(selectedProduct),
                         unit: products.find(p => p.id == selectedProduct)?.unit || "حبة",
                         quantity: parseInt(quantity),
-                        price: products.find(p => p.id == selectedProduct)?.purchasePrice || 0
+                        price: products.find(p => p.id == selectedProduct)?.purchasePrice || 0,
+                        colorCode: itemColor
                     }
                 ]
             };
@@ -231,8 +245,8 @@ function StockTransferPage() {
     return (
         <div className="container mt-4">
             <h2>سند تحويل مخزني</h2>
-            <div className="row">
-                <div className="col">
+            <div className="row mb-3">
+                <div className="col-md-6">
                     <label>رقم السند:</label>
                     <input
                         type="text"
@@ -244,32 +258,42 @@ function StockTransferPage() {
 
                 </div>
 
-                <div className="col">
+                <div className="col-md-6">
                     <label>تاريخ السند:</label>
                     <input type="date" className="form-control mb-2" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} />
                 </div>
             </div>
 
-            <div className="row">
-                <div className="form-group">
+            <div className="row mb-3">
+                <div className="col-md-4">
                     <label>اسم أمين المستودع:</label>
                     <input type="text" className="form-control" value={warehouseKeeperName} onChange={(e) => setWarehouseKeeperName(e.target.value)} />
                 </div>
-                <div className="col">
+                <div className="col-md-4">
                     <label>التوقيع:</label>
                     <input type="text" className="form-control mb-2" placeholder="توقيع" />
                 </div>
-            </div>
-
-            <div className="row">
-                <div className="col">
+                <div className="col col-md-4">
                     <label>المستلم:</label>
                     <input type="text" className="form-control mb-2" placeholder="يوقع عند الاستلام" />
                 </div>
             </div>
-
+            {/* حقل أمر التشغيل */}
             <div className="row">
-                <div className="col">
+                <div className="col-md-4">
+                    <label>أمر التشغيل:</label>
+                    <input
+                        type="text"
+                        className="form-control mb-2"
+                        placeholder="أدخل أمر التشغيل"
+                        value={operatingOrder}
+                        onChange={(e) => setOperatingOrder(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <div className="row mb-3">
+                <div className="col-md-6">
                     <label>من المستودع:</label>
                     <select className="form-select mb-2" value={selectedWarehouseFrom} onChange={(e) => setSelectedWarehouseFrom(e.target.value)}>
                         <option value="">اختر المستودع</option>
@@ -279,7 +303,7 @@ function StockTransferPage() {
                     </select>
                 </div>
 
-                <div className="col">
+                <div className="col-md-6">
                     <label>إلى المستودع:</label>
                     <select className="form-select mb-2" value={selectedWarehouseTo} onChange={(e) => setSelectedWarehouseTo(e.target.value)}>
                         <option value="">اختر المستودع</option>
@@ -290,8 +314,8 @@ function StockTransferPage() {
                 </div>
             </div>
 
-            <div className="row">
-                <div className="col">
+            <div className="row mb-3">
+                <div className="col-md-4">
                     <label>التصنيف الرئيسي:</label>
                     <select className="form-select mb-2" value={selectedCategory} onChange={(e) => {
                         setSelectedCategory(e.target.value);
@@ -304,7 +328,7 @@ function StockTransferPage() {
                     </select>
                 </div>
 
-                <div className="col">
+                <div className="col-md-4">
                     <label>التصنيف الفرعي:</label>
                     <select className="form-select mb-2" value={selectedSubCategory} onChange={(e) => setSelectedSubCategory(e.target.value)}>
                         <option value="">اختر التصنيف الفرعي</option>
@@ -314,7 +338,7 @@ function StockTransferPage() {
                     </select>
                 </div>
 
-                <div className="col">
+                <div className="col-md-4">
                     <label>الصنف:</label>
                     <select className="form-select mb-2" value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)}>
                         <option value="">اختر الصنف</option>
@@ -325,15 +349,41 @@ function StockTransferPage() {
                 </div>
             </div>
 
-            <div className="row">
-                <div className="col">
+            <div className="row mb-3">
+                <div className="col-md-2">
                     <label>الكمية:</label>
                     <input type="number" className="form-control mb-2" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                 </div>
+                <div className="col-md-4">
+                    <label>كود اللون:</label>
+                    <input
+                        type="text"
+                        className="form-control mb-2"
+                        placeholder="مثال: #FF5733"
+                        value={itemColor}
+                        onChange={(e) => setItemColor(e.target.value)}
+                    />
+                </div>
             </div>
 
+
+            {/* حقل textarea للملاحظات */}
+            <div className="row">
+                <div className="col">
+                    <label>الملاحظات:</label>
+                    <textarea
+                        className="form-control mb-2"
+                        rows="3"
+                        placeholder="اكتب الملاحظات هنا (اختياري)"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                    />
+                </div>
+            </div>
+
+
             <button className="btn btn-primary" onClick={handlePreview}>معاينة</button>
-            <div className="col">
+            <div className="col-md-4">
                 <label>رقم السند:</label>
                 <input
                     type="text"
@@ -348,8 +398,9 @@ function StockTransferPage() {
                 <table className="table table-bordered mt-3">
                     <thead>
                         <tr>
-                            <th>#</th>
+
                             <th>رقم الصنف في السند</th>
+                            <th>باركود</th>
                             <th>الصنف</th>
                             <th>الوحدة</th>
                             <th>الكمية</th>
@@ -357,11 +408,14 @@ function StockTransferPage() {
                             <th>إلى مستودع</th>
                             <th>السعر</th>
                             <th>إجمالي التكلفة</th>
+                            <th>كود اللون</th>
+                            <th>أمر التشغيل</th>
+                            <th>الملاحظات</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {tableData.map((row,index) => (
-                            <tr key={index+1}>
+                        {tableData.map((row, index) => (
+                            <tr key={index + 1}>
                                 <td>{row.id}</td>
                                 <td>{row.code}</td>
                                 <td>{row.product}</td>
@@ -371,6 +425,9 @@ function StockTransferPage() {
                                 <td>{row.toWarehouse}</td>
                                 <td>{row.price}</td>
                                 <td>{row.totalCost}</td>
+                                <td>{row.colorCode}</td>
+                                <td>{row.operatingOrder}</td>
+                                <td>{row.notes}</td>
                             </tr>
                         ))}
                     </tbody>

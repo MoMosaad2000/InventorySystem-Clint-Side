@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "http://inventory2025.runasp.net/api/";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function StockInVoucherPage() {
@@ -20,6 +20,11 @@ function StockInVoucherPage() {
     const [quantity, setQuantity] = useState(0);
     const [transferDate, setTransferDate] = useState(new Date().toISOString().slice(0, 10));
     const [items, setItems] = useState([]);
+
+    const [operatingOrder, setOperatingOrder] = useState("");
+    const [itemColor, setItemColor] = useState("");
+    const [notes, setNotes] = useState("");
+
     const [tableData, setTableData] = useState([]);
     const [stockInVouchers, setStockInVoucher] = useState([]);
     const [stockInVoucherId, setStockInVoucherId] = useState("");
@@ -141,7 +146,10 @@ function StockInVoucherPage() {
                     unit: item?.unit ?? item?.product?.unit ?? "غير متوفر",
                     quantity: item.quantity ?? 0,
                     price: productPriceMap[item.productId] ?? 0,
-                    totalCost: item.quantity * (productPriceMap[item.productId] ?? 0)
+                    totalCost: item.quantity * (productPriceMap[item.productId] ?? 0),
+                    operatingOrder: voucher.operatingOrder || "",
+                    notes: voucher.notes || "",
+                    colorCode: item.colorCode || ""
                 }))
             );
 
@@ -189,7 +197,10 @@ function StockInVoucherPage() {
             productName: product ? product.name : "",
             supplier: supplier ? supplier.name : "",
             toWarehouse: warehouse ? warehouse.name : "",
-            unit: product ? product.unit : ""
+            unit: product ? product.unit : "",
+            operatingOrder: operatingOrder || "",
+            notes: notes || "",
+            colorCode: itemColor || ""
         };
 
         setItems([...items, newItem]);
@@ -211,7 +222,8 @@ function StockInVoucherPage() {
             const stockInData = {
                 transferDate: new Date().toISOString(),
                 warehouseKeeperName: warehouseKeeperName || "غير محدد",
-                notes: "إضافة منتجات متعددة",
+                notes: notes,
+                operatingOrder: operatingOrder|| "رجاء اضف رقم التشغيل" ,
                 items: items.map((item) => ({
                     productId: parseInt(item.productId),
                     supplierId: parseInt(item.supplierId),
@@ -220,7 +232,8 @@ function StockInVoucherPage() {
 
                     price: item.price,
                     tax: 0,
-                    discount: 0
+                    discount: 0,
+                    colorCode: itemColor
                 }))
             };
 
@@ -245,6 +258,7 @@ function StockInVoucherPage() {
         }
     };
 
+    // البحث عن سند معيّن
     const handleSearch = async () => {
         if (!stockInVoucherId) {
             alert("⚠️ يجب إدخال رقم السند!");
@@ -261,39 +275,34 @@ function StockInVoucherPage() {
         });
 
         try {
-            const response = await axios
-                .get(`${API_BASE_URL}StockInVoucher/${stockInVoucherId}`)
-                .catch((error) => {
-                    console.error("Error fetching stock in voucher by ID:", error);
-                    alert("فشل في البحث عن السند. تأكد من صحة رقم السند.");
-                    return null;
-                });
-
-            if (!response || response.status !== 200) {
+            const response = await axios.get(`${API_BASE_URL}StockInVoucher/${stockInVoucherId}`);
+            if (response.status !== 200) {
                 alert("⚠️ لم يتم العثور على السند!");
                 setTableData([]);
                 return;
             }
 
             const voucher = response.data;
-
             if (!voucher.items || voucher.items.$values.length === 0) {
                 alert("⚠️ السند موجود ولكن لا يحتوي على أي منتجات!");
                 setTableData([]);
                 return;
             }
 
+            // تجهيز البيانات للعرض
             const tableRows = voucher.items.$values.map((item) => ({
                 id: item.id,
-                voucherId: voucher.id,
-                supplier: item?.supplier?.name ?? "غير محدد",
-                toWarehouse: warehouses.find((w) => w.id === item.warehouseId)?.name || "غير محدد",
-                product: item?.product?.name ?? "غير محدد",
-                code: item?.product?.code ?? "غير متوفر",
-                unit: item?.unit ?? item?.product?.unit ?? "غير متوفر",
+                code: item.product?.code || "",
+                product: item.product?.name || "غير محدد",
+                unit: item.product?.unit || "",
                 quantity: item.quantity,
-                price: productPriceMap[item.productId] ?? 0,
-                totalCost: item.quantity * (productPriceMap[item.productId] ?? 0)
+                supplier: item.supplier?.name || "—",
+                toWarehouse: item.warehouse?.name || "—",
+                price: productPriceMap[item.productId] || 0,
+                totalCost: item.quantity * (productPriceMap[item.productId] || 0),
+                colorCode: item.colorCode || "",
+                operatingOrder: voucher.operatingOrder || "", // ← نعرض أمر التشغيل
+                notes: voucher.notes || ""                   // ← نعرض الملاحظات
             }));
 
             setTableData(tableRows);
@@ -305,13 +314,12 @@ function StockInVoucherPage() {
         }
     };
 
-
     return (
         <div className="container mt-4">
             <h2>سند إضافة مخزني</h2>
             <div className="row">
                 <div className="row">
-                    <div className="col">
+                    <div className="col-md-6">
                         <label>رقم السند:</label>
                         <input
                             type="text"
@@ -320,7 +328,7 @@ function StockInVoucherPage() {
                             readOnly
                         />
                     </div>
-                    <div className="col">
+                    <div className="col-md-6">
                         <label>تاريخ السند:</label>
                         <input
                             type="date"
@@ -363,32 +371,29 @@ function StockInVoucherPage() {
             </div>
 
             <div className="row">
-                <div className="row">
-                    <div className="form-group">
+                <div className="row mb-3">
+                    <div className="col-md-4">
                         <label>اسم أمين المستودع:</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            value={warehouseKeeperName || ""}
-                            onChange={(e) => setWarehouseKeeperName(e.target.value || "")}
-                        />
+                        <input type="text" className="form-control"  value={warehouseKeeperName} onChange={(e) => setWarehouseKeeperName(e.target.value)} />
                     </div>
-                    <div className="col">
+                    <div className="col-md-4">
                         <label>التوقيع:</label>
-                        <input
-                            type="text"
-                            className="form-control mb-2"
-                            placeholder="توقيع"
-                        />
+                        <input type="text" className="form-control mb-2" />
+                    </div>
+                    <div className="col col-md-4">
+                        <label>المستلم:</label>
+                        <input type="text" className="form-control mb-2" placeholder="يوقع عند الاستلام" />
                     </div>
                 </div>
                 <div className="row">
-                    <div className="col">
-                        <label>المستلم:</label>
+                    <div className="col-md-4">
+                        <label>أمر التشغيل:</label>
                         <input
                             type="text"
                             className="form-control mb-2"
-                            placeholder="يوقع عند الاستلام"
+                            placeholder="أدخل أمر التشغيل"
+                            value={operatingOrder}
+                            onChange={(e) => setOperatingOrder(e.target.value)}
                         />
                     </div>
                 </div>
@@ -442,7 +447,7 @@ function StockInVoucherPage() {
                 </div>
             </div>
             <div className="row">
-                <div className="col">
+                <div className="col-md-2">
                     <label>الكمية:</label>
                     <input
                         type="number"
@@ -451,7 +456,32 @@ function StockInVoucherPage() {
                         onChange={(e) => setQuantity(e.target.value)}
                     />
                 </div>
+                <div className="col-md-4">
+                    <label>كود اللون:</label>
+                    <input
+                        type="text"
+                        className="form-control mb-2"
+                        placeholder="مثال: #FF5733"
+                        value={itemColor}
+                        onChange={(e) => setItemColor(e.target.value)}
+                    />
+                </div>
             </div>
+
+            {/* حقل textarea للملاحظات */}
+            <div className="row">
+                <div className="col">
+                    <label>الملاحظات:</label>
+                    <textarea
+                        className="form-control mb-2"
+                        rows="3"
+                        placeholder="اكتب الملاحظات هنا (اختياري)"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                    />
+                </div>
+            </div>
+
             <button className="btn btn-success mt-3" onClick={handleAddItem}>
                 إضافة المنتج
             </button>
@@ -467,6 +497,9 @@ function StockInVoucherPage() {
                             <th>إلى مستودع</th>
                             <th>الكمية</th>
                             <th>إجمالي التكلفة</th>
+                            <th>كود اللون</th>
+                            <th>أمر التشغيل</th>
+                            <th>الملاحظات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -477,6 +510,9 @@ function StockInVoucherPage() {
                                 <td>{item.toWarehouse}</td>
                                 <td>{item.quantity}</td>
                                 <td>{item.totalCost}</td>
+                                <td>{item.colorCode}</td>
+                                <td>{item.operatingOrder}</td>
+                                <td>{item.notes}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -503,7 +539,7 @@ function StockInVoucherPage() {
                 <table className="table table-bordered mt-3">
                     <thead>
                         <tr>
-                            <th>رقم الصنف في السند </th>
+                            <th>رقم الصنف في السند</th>
                             <th>باركود</th>
                             <th>الصنف</th>
                             <th>الوحدة</th>
@@ -512,6 +548,9 @@ function StockInVoucherPage() {
                             <th>المستودع</th>
                             <th>السعر</th>
                             <th>إجمالي التكلفة</th>
+                            <th>كود اللون</th>
+                            <th>أمر التشغيل</th>
+                            <th>الملاحظات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -526,10 +565,12 @@ function StockInVoucherPage() {
                                 <td>{row.toWarehouse}</td>
                                 <td>{row.price}</td>
                                 <td>{row.totalCost}</td>
+                                <td>{row.colorCode}</td>
+                                <td>{row.operatingOrder}</td>
+                                <td>{row.notes}</td>
                             </tr>
                         ))}
                     </tbody>
-
                 </table>
             )}
 

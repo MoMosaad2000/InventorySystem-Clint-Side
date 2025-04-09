@@ -1,6 +1,6 @@
 ﻿/* تعريف المتغيرات الأساسية */
 :root {
-  background-color: #fdfdfd; /* خلفية off-white */
+    background-color: #fdfdfd; /* خلفية off-white */
     --text-color: #1c1c1c; /* لون نص داكن */
     --accent-color: #74b9ff; /* لون أزرق فاتح للإبراز عند hover */
     --btn-primary-bg: #0d6efd; /* زر أزرق */
@@ -11,7 +11,7 @@
 
 /* تطبيق الأساسيات */
 body {
-   background-color: #fdfdfd;
+    background-color: #fdfdfd;
     color: var(--text-color);
     direction: rtl;
     text-align: right;
@@ -28,6 +28,12 @@ body {
 .app-header {
     text-align: center;
     margin-bottom: 2rem;
+    display:flex;
+    justify-content:center;
+}
+.app-logo {
+    height: 160px;
+    object-fit: contain;
 }
 
     .app-header h1 {
