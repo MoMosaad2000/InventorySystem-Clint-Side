@@ -1,8 +1,8 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function StockTransferPage() {
@@ -37,7 +37,7 @@ function StockTransferPage() {
 
     const fetchWarehouses = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}warehouses`);
+            const response = await axiosInstance.get(`warehouses`);
             setWarehouses(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching warehouses:", error);
@@ -46,7 +46,7 @@ function StockTransferPage() {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axiosInstance.get(`categories`);
             setCategories(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
@@ -55,7 +55,7 @@ function StockTransferPage() {
 
     const fetchSubCategories = async (categoryId) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}subcategories`);
+            const response = await axiosInstance.get(`subcategories`);
             const filteredSubCategories = response.data?.$values.filter(sc => sc.categoryId === parseInt(categoryId)) || [];
             setSubCategories(filteredSubCategories);
         } catch (error) {
@@ -66,7 +66,7 @@ function StockTransferPage() {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}products`);
+            const response = await axiosInstance.get(`products`);
             setProducts(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching products:", error);
@@ -75,50 +75,15 @@ function StockTransferPage() {
     // Fetch stock transfers data
     const fetchStockTransfers = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}StockTransfer`);
+            const response = await axiosInstance.get(`StockTransfer`);
             setStockTransfers(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching stock transfers:", error);
         }
     };
-    //const handlePreview = () => {
-    //    let filteredProducts = products;
-
-    //    if (selectedProduct) {
-    //        filteredProducts = products.filter(p => p.id === parseInt(selectedProduct));
-    //    } else if (selectedSubCategory) {
-    //        filteredProducts = products.filter(p => p.subCategoryId === parseInt(selectedSubCategory));
-    //    } else if (selectedCategory) {
-    //        const relatedSubCategories = subCategories.filter(sc => sc.categoryId === parseInt(selectedCategory)).map(sc => sc.id);
-    //        filteredProducts = products.filter(p => relatedSubCategories.includes(p.subCategoryId) || p.subCategory?.categoryId === parseInt(selectedCategory));
-    //    }
-    //    // Fetch price from the purchase invoice based on productId
-    //    const selectedInvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
-    //    const productPriceMap = {};
-    //    selectedInvoice.data?.$values.forEach(invoice => {
-    //        invoice.items?.$values.forEach(item => {
-    //            productPriceMap[item.productId] = item.price; // Mapping productId to price
-    //        });
-    //    });
-
-    //    const tableRows = filteredProducts.map((product, index) => ({
-    //        id: index + 1,
-    //        product: product.name,
-    //        code: product.code,
-    //        unit: product.unit,
-    //        quantity: quantity,
-    //        fromWarehouse: warehouses.find(w => w.id === parseInt(selectedWarehouseFrom))?.name || "غير محدد",
-    //        toWarehouse: warehouses.find(w => w.id === parseInt(selectedWarehouseTo))?.name || "غير محدد",
-    //        price: product.purchasePrice || 0,  // Assuming price is available in the product
-    //        totalCost: quantity * (product.purchasePrice || 0)
-    //    }));
-
-    //    setTableData(tableRows);
-    //    setShowTable(true);
-    //};
     const handlePreview = async () => {
         // Fetch price from the purchase invoice based on productId
-        const selectedInvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+        const selectedInvoice = await axiosInstance.get(`PurchaseInvoice`);
         const productPriceMap = {};
         selectedInvoice.data?.$values.forEach(invoice => {
             invoice.items?.$values.forEach(item => {
@@ -130,7 +95,7 @@ function StockTransferPage() {
         //(transfer.fromWarehouseId === parseInt(selectedWarehouseFrom) ||
         //    transfer.toWarehouseId === parseInt(selectedWarehouseTo))
         //);
-        const response = await axios.get(`${API_BASE_URL}StockTransfer`);
+        const response = await axiosInstance.get(`StockTransfer`);
         const allTransfers = response.data?.$values || [];
 
         if (allTransfers.length === 0) {
@@ -165,7 +130,7 @@ function StockTransferPage() {
             return;
         }
         // Fetch price from the purchase invoice based on productId
-        const selectedInvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+        const selectedInvoice = await axiosInstance.get(`PurchaseInvoice`);
         const productPriceMap = {};
         selectedInvoice.data?.$values.forEach(invoice => {
             invoice.items?.$values.forEach(item => {
@@ -174,7 +139,7 @@ function StockTransferPage() {
         });
 
         try {
-            const response = await axios.get(`${API_BASE_URL}StockTransfer/${stockTransferId}`);
+            const response = await axiosInstance.get(`StockTransfer/${stockTransferId}`);
             const transferData = response.data;
             const tableRows = transferData.items?.$values.map((item) => ({
                 id: transferData.id,
@@ -206,10 +171,6 @@ function StockTransferPage() {
             return;
         }
         try {
-            //const selectedProductName = products.find(p => p.id == selectedProduct)?.name;
-            //const selectedWarehouseFromName = warehouses.find(w => w.id == selectedWarehouseFrom)?.name;
-            //const selectedWarehouseToName = warehouses.find(w => w.id == selectedWarehouseTo)?.name;
-
             const transferData = {
                 fromWarehouseId: parseInt(selectedWarehouseFrom),
                 toWarehouseId: parseInt(selectedWarehouseTo),
@@ -228,7 +189,7 @@ function StockTransferPage() {
                 ]
             };
 
-            const response = await axios.post(`${API_BASE_URL}StockTransfer`, transferData);
+            const response = await axiosInstance.post(`StockTransfer`, transferData);
 
             if (response.status === 201) {
                 alert("تم تحويل المخزون بنجاح ✅");

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function StockInVoucherPage() {
@@ -16,6 +16,10 @@ function StockInVoucherPage() {
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedSubCategory, setSelectedSubCategory] = useState("");
     const [selectedProduct, setSelectedProduct] = useState("");
+    const [productSearch, setProductSearch] = useState("");
+    const [showProductList, setShowProductList] = useState(false);
+
+
     const [warehouseKeeperName, setWarehouseKeeperName] = useState("");
     const [quantity, setQuantity] = useState(0);
     const [transferDate, setTransferDate] = useState(new Date().toISOString().slice(0, 10));
@@ -46,7 +50,7 @@ function StockInVoucherPage() {
 
     const fetchStockInVoucher = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}StockInVoucher`);
+            const response = await axiosInstance.get(`StockInVoucher`);
             console.log("📌 السندات المحفوظة في الـ API:", response.data?.$values);
             setStockInVoucher(response.data?.$values || []);
         } catch (error) {
@@ -56,7 +60,7 @@ function StockInVoucherPage() {
 
     const fetchNextVoucherId = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}StockInVoucher/next-id`);
+            const response = await axiosInstance.get(`StockInVoucher/next-id`);
             setNextVoucherId(response.data);
         } catch (error) {
             console.error("Error fetching next voucher ID:", error);
@@ -65,7 +69,7 @@ function StockInVoucherPage() {
 
     const fetchSuppliers = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}Suppliers`);
+            const response = await axiosInstance.get(`Suppliers`);
             setSuppliers(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching suppliers:", error);
@@ -74,7 +78,7 @@ function StockInVoucherPage() {
 
     const fetchWarehouses = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}warehouses`);
+            const response = await axiosInstance.get(`warehouses`);
             setWarehouses(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching warehouses:", error);
@@ -83,7 +87,7 @@ function StockInVoucherPage() {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axiosInstance.get(`categories`);
             setCategories(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
@@ -92,7 +96,7 @@ function StockInVoucherPage() {
 
     const fetchSubCategories = async (categoryId) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}subcategories`);
+            const response = await axiosInstance.get(`subcategories`);
             const filteredSubCategories =
                 response.data?.$values.filter(
                     (sc) => sc.categoryId === parseInt(categoryId)
@@ -105,7 +109,7 @@ function StockInVoucherPage() {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}products`);
+            const response = await axiosInstance.get(`products`);
             setProducts(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching products:", error);
@@ -114,7 +118,7 @@ function StockInVoucherPage() {
     const handlePreview = async () => {
         try {
             // جلب فواتير الشراء لتعيين أسعار المنتجات
-            const selectedInvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+            const selectedInvoice = await axiosInstance.get(`PurchaseInvoice`);
             const productPriceMap = {};
             selectedInvoice.data?.$values?.forEach((invoice) => {
                 invoice.items?.$values?.forEach((item) => {
@@ -123,7 +127,7 @@ function StockInVoucherPage() {
             });
 
             // جلب سندات إضافة المخزون
-            const response = await axios.get(`${API_BASE_URL}StockInVoucher`);
+            const response = await axiosInstance.get(`StockInVoucher`);
             const allStockInVouchers = response.data?.$values || [];
 
             if (allStockInVouchers.length === 0) {
@@ -197,7 +201,7 @@ function StockInVoucherPage() {
             productName: product ? product.name : "",
             supplier: supplier ? supplier.name : "",
             toWarehouse: warehouse ? warehouse.name : "",
-            unit: product ? product.unit : "",
+            unit: selectedProduct?.unit || "",  
             operatingOrder: operatingOrder || "",
             notes: notes || "",
             colorCode: itemColor || ""
@@ -225,11 +229,11 @@ function StockInVoucherPage() {
                 notes: notes,
                 operatingOrder: operatingOrder|| "رجاء اضف رقم التشغيل" ,
                 items: items.map((item) => ({
-                    productId: parseInt(item.productId),
+                    productId: typeof item.productId === 'object' ? item.productId.id : item.productId,
                     supplierId: parseInt(item.supplierId),
                     warehouseId: parseInt(item.warehouseId),
                     quantity: item.quantity,
-
+                    unit: item.unit || "",
                     price: item.price,
                     tax: 0,
                     discount: 0,
@@ -238,8 +242,8 @@ function StockInVoucherPage() {
             };
 
             console.log("🔍 البيانات المرسلة:", JSON.stringify(stockInData, null, 2));
-            const response = await axios.post(
-                `${API_BASE_URL}StockInVoucher`,
+            const response = await axiosInstance.post(
+                `StockInVoucher`,
                 stockInData
             );
 
@@ -266,7 +270,7 @@ function StockInVoucherPage() {
         }
 
         // جلب أسعار المنتجات من فواتير الشراء
-        const selectedInvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+        const selectedInvoice = await axiosInstance.get(`PurchaseInvoice`);
         const productPriceMap = {};
         selectedInvoice.data?.$values.forEach((invoice) => {
             invoice.items?.$values.forEach((item) => {
@@ -275,7 +279,7 @@ function StockInVoucherPage() {
         });
 
         try {
-            const response = await axios.get(`${API_BASE_URL}StockInVoucher/${stockInVoucherId}`);
+            const response = await axiosInstance.get(`StockInVoucher/${stockInVoucherId}`);
             if (response.status !== 200) {
                 alert("⚠️ لم يتم العثور على السند!");
                 setTableData([]);
@@ -312,6 +316,20 @@ function StockInVoucherPage() {
             alert("فشل في البحث عن السند.");
             setTableData([]);
         }
+    };
+    const handleRemoveItem = (indexToRemove) => {
+        setItems(prevItems => prevItems.filter((_, index) => index !== indexToRemove));
+    };
+    const filteredProducts = products.filter((product) =>
+        product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        product.code.toLowerCase().includes(productSearch.toLowerCase())
+    );
+
+    const handleProductSelect = (product) => {
+        setSelectedProduct(product);
+        setProductSearch(`${product.name} (${product.code})`);
+        setItemColor(product.colorCode || "");
+        setShowProductList(false);
     };
 
     return (
@@ -430,21 +448,50 @@ function StockInVoucherPage() {
                         ))}
                     </select>
                 </div>
-                <div className="col">
-                    <label>الصنف:</label>
-                    <select
-                        className="form-select mb-2"
-                        value={selectedProduct}
-                        onChange={(e) => setSelectedProduct(e.target.value)}
-                    >
-                        <option value="">اختر الصنف</option>
-                        {products.map((product) => (
-                            <option key={product.id} value={product.id}>
-                                {product.name} ({product.code})
-                            </option>
-                        ))}
-                    </select>
+                <div className="row mb-3">
+                    <div className="col-md-6 position-relative">
+                        <label>عرض الصنف:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="اكتب اسم أو كود الصنف"
+                            value={productSearch}
+                            onChange={(e) => {
+                                setProductSearch(e.target.value);
+                                setShowProductList(true);
+                            }}
+                            onFocus={() => setShowProductList(true)}
+                        />
+                        {showProductList && (
+                            <ul className="list-group position-absolute w-100 z-3" style={{ maxHeight: "200px", overflowY: "auto" }}>
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.map((product) => (
+                                        <li
+                                            key={product.id}
+                                            className="list-group-item list-group-item-action"
+                                            onClick={() => handleProductSelect(product)}
+                                            style={{ cursor: "pointer" }}
+                                        >
+                                            {product.name} ({product.code})
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="list-group-item text-muted">لا يوجد نتائج</li>
+                                )}
+                            </ul>
+                        )}
+                    </div>
+                    <div className="col-md-6">
+                        <label>رقم الصنف:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={selectedProduct?.code || ""}
+                            readOnly
+                        />
+                    </div>
                 </div>
+
             </div>
             <div className="row">
                 <div className="col-md-2">
@@ -456,14 +503,13 @@ function StockInVoucherPage() {
                         onChange={(e) => setQuantity(e.target.value)}
                     />
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-3">
                     <label>كود اللون:</label>
                     <input
                         type="text"
-                        className="form-control mb-2"
-                        placeholder="مثال: #FF5733"
+                        className="form-control"
                         value={itemColor}
-                        onChange={(e) => setItemColor(e.target.value)}
+                        readOnly
                     />
                 </div>
             </div>
@@ -513,6 +559,9 @@ function StockInVoucherPage() {
                                 <td>{item.colorCode}</td>
                                 <td>{item.operatingOrder}</td>
                                 <td>{item.notes}</td>
+                                <td>
+                                    <button className="btn btn-sm btn-danger" onClick={() => handleRemoveItem(index)}>🗑 حذف</button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

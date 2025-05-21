@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
+import { FaPaperclip } from "react-icons/fa";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function ProductsPage() {
     const [categories, setCategories] = useState([]);
@@ -12,15 +13,16 @@ function ProductsPage() {
     const [selectedSubCategory, setSelectedSubCategory] = useState("");
     const [selectedWarehouse, setSelectedWarehouse] = useState("");
     const [showProducts, setShowProducts] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
     const [newProduct, setNewProduct] = useState({
         name: "",
         code: "",
         description: "",
-        unit: "حبة",
-        imageUrl: "",
+        unit: "",
         subCategoryId: "",
-        colorCode: "" // الخاصية الجديدة
+        colorCode: ""
     });
+    const [codeExists, setCodeExists] = useState(false);
 
     useEffect(() => {
         fetchCategories();
@@ -36,42 +38,44 @@ function ProductsPage() {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axiosInstance.get(`categories`);
             setCategories(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
-            setCategories([]);
         }
     };
 
     const fetchSubCategories = async (categoryId) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}subcategories?categoryId=${categoryId}`);
+            const response = await axiosInstance.get(`subcategories?categoryId=${categoryId}`);
             setSubCategories(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching subcategories:", error);
-            setSubCategories([]);
         }
     };
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}products`);
+            const response = await axiosInstance.get(`products`);
             setProducts(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching products:", error);
-            setProducts([]);
         }
     };
 
     const fetchWarehouses = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}warehouses`);
+            const response = await axiosInstance.get(`warehouses`);
             setWarehouses(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching warehouses:", error);
-            setWarehouses([]);
         }
+    };
+
+    const handleCodeChange = (value) => {
+        setNewProduct({ ...newProduct, code: value });
+        const exists = products.some(p => p.code === value);
+        setCodeExists(exists);
     };
 
     const handleAddProduct = async () => {
@@ -79,64 +83,59 @@ function ProductsPage() {
             alert("⚠️ يرجى ملء جميع الحقول المطلوبة.");
             return;
         }
-        try {
-            const productData = {
-                name: newProduct.name,
-                code: newProduct.code,
-                description: newProduct.description || "",
-                unit: newProduct.unit,
-                imageUrl: newProduct.imageUrl || "",
-                subCategoryId: parseInt(selectedSubCategory),
-                warehouseId: parseInt(selectedWarehouse),
-                colorCode: newProduct.colorCode || ""
-            };
+        if (codeExists) {
+            alert("⚠️ كود الصنف مستخدم من قبل!");
+            return;
+        }
 
-            const response = await axios.post(`${API_BASE_URL}products`, productData);
+        const formData = new FormData();
+        const productData = {
+            name: newProduct.name,
+            code: newProduct.code,
+            description: newProduct.description,
+            unit: newProduct.unit,
+            subCategoryId: parseInt(selectedSubCategory),
+            warehouseId: parseInt(selectedWarehouse),
+            colorCode: newProduct.colorCode
+        };
+
+        formData.append("product", JSON.stringify(productData));
+        if (imageFile) formData.append("image", imageFile);
+
+        try {
+            const response = await axiosInstance.post(`products/upload`, formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+
             if (response.status === 201) {
-                console.log("✅ المنتج أُضيف بنجاح:", response.data);
                 fetchProducts();
                 fetchWarehouses();
-                setNewProduct({
-                    name: "",
-                    code: "",
-                    description: "",
-                    unit: "حبة",
-                    imageUrl: "",
-                    subCategoryId: "",
-                    colorCode: ""
-                });
-                alert(`✅ المنتج "${newProduct.name}" أُضيف بنجاح إلى المستودع!`);
+                setNewProduct({ name: "", code: "", description: "", unit: "حبة", subCategoryId: "", colorCode: "" });
+                setImageFile(null);
+                alert(`✅ المنتج "${productData.name}" أُضيف بنجاح!`);
             }
         } catch (error) {
             console.error("❌ خطأ عند إضافة المنتج:", error.response?.data || error.message);
-            alert("⚠️ فشل في إضافة المنتج. تأكد من صحة البيانات المدخلة.");
+            alert("⚠️ فشل في إضافة المنتج.");
         }
     };
 
     return (
         <div className="container mt-4">
-            <h2>إضافة منتج</h2>
+            <h2>إضافة صنف</h2>
             <div className="row mb-3">
                 <div className="col">
                     <label>التصنيف الرئيسي:</label>
                     <select className="form-select" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
                         <option value="">أختر التصنيف الرئيسي</option>
-                        {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.name}
-                            </option>
-                        ))}
+                        {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
                     </select>
                 </div>
                 <div className="col">
                     <label>التصنيف الفرعي:</label>
                     <select className="form-select" value={selectedSubCategory} onChange={(e) => setSelectedSubCategory(e.target.value)}>
                         <option value="">أختر التصنيف الفرعي</option>
-                        {subCategories.map((subCategory) => (
-                            <option key={subCategory.id} value={subCategory.id}>
-                                {subCategory.name}
-                            </option>
-                        ))}
+                        {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
                     </select>
                 </div>
             </div>
@@ -147,7 +146,9 @@ function ProductsPage() {
                 </div>
                 <div className="col">
                     <label>الباركود:</label>
-                    <input type="text" className="form-control" value={newProduct.code} onChange={(e) => setNewProduct({ ...newProduct, code: e.target.value })} />
+                    <input type="text" className={`form-control ${codeExists ? "is-invalid" : ""}`}
+                     value={newProduct.code} onChange={(e) => handleCodeChange(e.target.value)} />
+                    {codeExists && <div className="invalid-feedback">⚠️ هذا الكود مستخدم بالفعل!</div>}
                 </div>
             </div>
             <div className="row mb-3">
@@ -162,27 +163,30 @@ function ProductsPage() {
                         <option value="كرتونة">كرتونة</option>
                         <option value="كيلو">كيلو</option>
                         <option value="لوح">لوح</option>
+                        <option value="متر">متر</option>
                     </select>
                 </div>
             </div>
             <div className="row mb-3">
                 <div className="col">
-                    <label>رابط الصورة:</label>
-                    <input type="text" className="form-control" value={newProduct.imageUrl} onChange={(e) => setNewProduct({ ...newProduct, imageUrl: e.target.value })} />
+                    <label>ملف الصنف:</label>
+                    <input type="file" className="form-control" onChange={(e) => setImageFile(e.target.files[0])} />
+                </div>
+                <div className="col">
+                    <label>اسم الملف المرفق:</label>
+                    <input type="text" className="form-control" value={imageFile?.name || ""} readOnly />
                 </div>
                 <div className="col">
                     <label>كود اللون:</label>
                     <input type="text" className="form-control" placeholder="مثال: #FF5733" value={newProduct.colorCode} onChange={(e) => setNewProduct({ ...newProduct, colorCode: e.target.value })} />
                 </div>
+            </div>
+            <div className="row mb-3">
                 <div className="col">
                     <label>المستودع:</label>
                     <select className="form-select" value={selectedWarehouse} onChange={(e) => setSelectedWarehouse(e.target.value)}>
                         <option value="">أختر مستودع</option>
-                        {warehouses.map((warehouse) => (
-                            <option key={warehouse.id} value={warehouse.id}>
-                                {warehouse.name}
-                            </option>
-                        ))}
+                        {warehouses.map(wh => <option key={wh.id} value={wh.id}>{wh.name}</option>)}
                     </select>
                 </div>
             </div>
@@ -198,17 +202,25 @@ function ProductsPage() {
                                 <th>كود الصنف</th>
                                 <th>الوحدة</th>
                                 <th>كود اللون</th>
-                                <th>مستودع رقم</th>
+                                <th>مستودع</th>
+                                <th>المرفق</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {products.map((product) => (
+                            {products.map(product => (
                                 <tr key={product.id}>
                                     <td>{product.name}</td>
                                     <td>{product.code}</td>
                                     <td>{product.unit}</td>
                                     <td>{product.colorCode}</td>
                                     <td>{product.warehouseId}</td>
+                                    <td>
+                                        {product.imageUrl ? (
+                                            <a href={product.imageUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-light">
+                                                <FaPaperclip />
+                                            </a>
+                                        ) : "-"}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -220,3 +232,4 @@ function ProductsPage() {
 }
 
 export default ProductsPage;
+

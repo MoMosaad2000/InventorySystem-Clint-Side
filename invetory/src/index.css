@@ -10,3 +10,8 @@ body {
     direction: rtl;
     text-align: right;
 }
+@media print {
+    .d-print-none {
+        display: none !important;
+    }
+}

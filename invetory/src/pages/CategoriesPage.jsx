@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function CategoriesPage() {
@@ -14,7 +14,7 @@ function CategoriesPage() {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axiosInstance.get(`categories`);
             const data = response.data?.$values || [];  // ✅ التأكد من أن البيانات مسترجعة كمصفوفة
             setCategories(data);
         } catch (error) {
@@ -26,7 +26,7 @@ function CategoriesPage() {
     const handleAddCategory = async () => {
         if (!newCategory) return;
         try {
-            await axios.post(`${API_BASE_URL}categories`, { name: newCategory });
+            await axiosInstance.post(`categories`, { name: newCategory });
             fetchCategories();  // 🔄 تحديث القائمة بعد الإضافة مباشرة
             setNewCategory("");
         } catch (error) {

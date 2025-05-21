@@ -23,6 +23,11 @@ body {
     margin: 0 auto;
     padding: 2rem;
 }
+.full-width-page {
+    width: 100%;
+    padding-inline: 1rem;
+    direction: rtl;
+}
 
 /* تنسيق الهيدر */
 .app-header {

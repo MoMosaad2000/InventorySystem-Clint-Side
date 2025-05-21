@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from "axios";
+
+import axiosInstance from "../utils/axiosInstance";
 import { Table, Button, Form } from "react-bootstrap";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const WarehouseReport = () => {
     const [startDate, setStartDate] = useState(new Date("2025-01-01"));
@@ -19,11 +20,11 @@ const WarehouseReport = () => {
     const [availableOperatingOrders, setAvailableOperatingOrders] = useState([]);
 
     useEffect(() => {
-        axios.get(`${API_BASE_URL}Products`)
+        axiosInstance.get(`Products`)
             .then(response => setProducts(response.data.$values || []))
             .catch(error => console.error("Error fetching products:", error));
 
-        axios.get(`${API_BASE_URL}Warehouses`)
+        axiosInstance.get(`Warehouses`)
             .then(response => setWarehouses(response.data.$values || []))
             .catch(error => console.error("Error fetching warehouses:", error));
     }, []);
@@ -37,10 +38,10 @@ const WarehouseReport = () => {
             const formattedEndDate = endDate.toISOString().split('T')[0];
 
             const [stockInRes, stockOutRes, transferRes, purchaseInvoicesRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}StockInVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } }),
-                axios.get(`${API_BASE_URL}StockOutVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } }),
-                axios.get(`${API_BASE_URL}StockTransfer`),
-                axios.get(`${API_BASE_URL}PurchaseInvoice`)
+                axiosInstance.get(`StockInVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } }),
+                axiosInstance.get(`StockOutVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } }),
+                axiosInstance.get(`StockTransfer`),
+                axiosInstance.get(`PurchaseInvoice`)
             ]);
 
             const stockInData = stockInRes.data?.$values || [];
@@ -150,7 +151,7 @@ const WarehouseReport = () => {
     };
 
     return (
-        <div className="container mt-4">
+        <div style={{ width: "90vw", padding: 0, margin: 0 }}>
             <h2>تقرير المخزن</h2>
             <div className="row mb-3 align-items-end">
                 <div className="col-md-3">
@@ -228,7 +229,7 @@ const WarehouseReport = () => {
                             ))}
                         </tbody>
                         <tfoot>
-                            <tr>
+                                <tr className="table-info fw-bold">
                                 <td colSpan="12">الإجمالي</td>
                                 <td>{totals.totalCost}</td>
                                 <td></td>

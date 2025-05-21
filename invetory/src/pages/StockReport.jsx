@@ -1,16 +1,20 @@
 ﻿import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import { Table, Form, Button } from "react-bootstrap";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const StockReport = () => {
     const [startDate, setStartDate] = useState(new Date("2025-01-01"));
     const [endDate, setEndDate] = useState(new Date());
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState("");
+    const [categories, setCategories] = useState([]);
+    const [subCategories, setSubCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedSubCategory, setSelectedSubCategory] = useState("");
     const [selectedColor, setSelectedColor] = useState("");
     const [reportData, setReportData] = useState([]);
     const [totals, setTotals] = useState({ inQty: 0, inCost: 0, outQty: 0, outCost: 0 });
@@ -18,13 +22,13 @@ const StockReport = () => {
     const [initialBalance, setInitialBalance] = useState({ quantity: 0, cost: 0 });
 
     useEffect(() => {
-        axios.get(`${API_BASE_URL}Products`)
-            .then(response => setProducts(response.data.$values || []))
-            .catch(error => console.error("Error fetching products:", error));
+        axiosInstance.get(`Products`).then(res => setProducts(res.data.$values || []));
+        axiosInstance.get(`Categories`).then(res => setCategories(res.data.$values || []));
+        axiosInstance.get(`SubCategories`).then(res => setSubCategories(res.data.$values || []));
     }, []);
 
     const fetchPurchasePrices = async () => {
-        const res = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+        const res = await axiosInstance.get(`PurchaseInvoice`);
         const prices = {};
 
         res.data?.$values?.forEach(invoice => {
@@ -51,20 +55,21 @@ const StockReport = () => {
             const formattedInitialEnd = dayBeforeStart.toISOString().split('T')[0];
 
             const [stockInBefore, stockOutBefore] = await Promise.all([
-                axios.get(`${API_BASE_URL}StockInVoucher`, {
+                axiosInstance.get(`StockInVoucher`, {
                     params: { startDate: formattedInitialStart, endDate: formattedInitialEnd }
                 }),
-                axios.get(`${API_BASE_URL}StockOutVoucher`, {
+                axiosInstance.get(`StockOutVoucher`, {
                     params: { startDate: formattedInitialStart, endDate: formattedInitialEnd }
                 }),
             ]);
-
             const filterItems = item => {
+                const product = products.find(p => p.id == item.productId);
                 const matchesProduct = !selectedProduct || item.productId == selectedProduct;
                 const matchesColor = !selectedColor || item.colorCode === selectedColor;
-                return matchesProduct && matchesColor;
+                const matchesSubCategory = !selectedSubCategory || product?.subCategoryId == selectedSubCategory;
+                const matchesCategory = !selectedCategory || subCategories.find(sc => sc.id === product?.subCategoryId)?.categoryId == selectedCategory;
+                return matchesProduct && matchesColor && matchesSubCategory && matchesCategory;
             };
-
             const mapItems = (data, type) => data?.$values.flatMap(voucher =>
                 voucher.items?.$values
                     .filter(filterItems)
@@ -109,8 +114,8 @@ const StockReport = () => {
             const formattedEndDate = endDate.toISOString().split('T')[0];
 
             const [stockInResponse, stockOutResponse] = await Promise.all([
-                axios.get(`${API_BASE_URL}StockInVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } }),
-                axios.get(`${API_BASE_URL}StockOutVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } })
+                axiosInstance.get(`StockInVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } }),
+                axiosInstance.get(`StockOutVoucher`, { params: { startDate: formattedStartDate, endDate: formattedEndDate } })
             ]);
 
             const stockInData = mapItems(stockInResponse.data, "سند إضافة");
@@ -158,7 +163,7 @@ const StockReport = () => {
     };
 
     return (
-        <div className="container mt-4">
+        <div style={{ width: "90vw", padding: 0, margin: 0 }}>
             <h2>تقرير الصنف</h2>
             <div className="row mb-3 align-items-end">
                 <div className="col-md-3">
@@ -168,6 +173,26 @@ const StockReport = () => {
                 <div className="col-md-3">
                     <label>إلى تاريخ:</label>
                     <DatePicker selected={endDate} onChange={date => setEndDate(date)} className="form-control" dateFormat="yyyy-MM-dd" />
+                </div>
+                <div className="col-md-3">
+                    <label>الصنف الرئيسي:</label>
+                    <Form.Select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+                        <option value="">-- اختر --</option>
+                        {categories.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </Form.Select>
+                </div>
+                <div className="col-md-3">
+                    <label>الصنف الفرعي:</label>
+                    <Form.Select value={selectedSubCategory} onChange={e => setSelectedSubCategory(e.target.value)}>
+                        <option value="">-- اختر --</option>
+                        {subCategories
+                            .filter(sc => sc.categoryId == selectedCategory)
+                            .map(sc => (
+                                <option key={sc.id} value={sc.id}>{sc.name}</option>
+                            ))}
+                    </Form.Select>
                 </div>
                 <div className="col-md-3">
                     <label>الصنف:</label>
@@ -250,7 +275,7 @@ const StockReport = () => {
                             ))}
                         </tbody>
                         <tfoot>
-                            <tr>
+                                <tr className="table-info fw-bold">
                                 <td colSpan="8">الإجمالي</td>
                                 <td>{totals.inQty}</td>
                                 <td>{totals.inCost}</td>

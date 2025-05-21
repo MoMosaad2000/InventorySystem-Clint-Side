@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function StockInVoucherPage() {
     const [customers, setCustomers] = useState([]);
@@ -18,6 +18,9 @@ function StockInVoucherPage() {
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedSubCategory, setSelectedSubCategory] = useState("");
     const [selectedProduct, setSelectedProduct] = useState("");
+    const [productSearch, setProductSearch] = useState("");
+    const [showProductList, setShowProductList] = useState(false);
+
     const [warehouseKeeperName, setWarehouseKeeperName] = useState("");
     const [quantity, setQuantity] = useState(0);
     const [transferDate, setTransferDate] = useState(
@@ -50,7 +53,7 @@ function StockInVoucherPage() {
 
     const fetchStockOutVoucher = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}StockOutVoucher`);
+            const response = await axiosInstance.get(`StockOutVoucher`);
             console.log("📌 السندات المحفوظة في الـ API:", response.data?.$values);
             setStockOutVoucher(response.data?.$values || []);
         } catch (error) {
@@ -60,8 +63,8 @@ function StockInVoucherPage() {
 
     const fetchNextVoucherId = async () => {
         try {
-            const response = await axios.get(
-                `${API_BASE_URL}StockOutVoucher/next-id`
+            const response = await axiosInstance.get(
+                `StockOutVoucher/next-id`
             );
             setNextVoucherId(response.data);
         } catch (error) {
@@ -71,7 +74,7 @@ function StockInVoucherPage() {
 
     const fetchCustomers = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}Customers`);
+            const response = await axiosInstance.get(`Customers`);
             setCustomers(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching customers:", error);
@@ -80,7 +83,7 @@ function StockInVoucherPage() {
 
     const fetchWarehouses = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}warehouses`);
+            const response = await axiosInstance.get(`warehouses`);
             setWarehouses(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching warehouses:", error);
@@ -89,7 +92,7 @@ function StockInVoucherPage() {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axiosInstance.get(`Categories`);
             setCategories(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
@@ -98,7 +101,7 @@ function StockInVoucherPage() {
 
     const fetchSubCategories = async (categoryId) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}subcategories`);
+            const response = await axiosInstance.get(`Subcategories`);
             const filteredSubCategories =
                 response.data?.$values.filter(
                     (sc) => sc.categoryId === parseInt(categoryId)
@@ -111,7 +114,7 @@ function StockInVoucherPage() {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}products`);
+            const response = await axiosInstance.get(`products`);
             setProducts(response.data?.$values || []);
         } catch (error) {
             console.error("Error fetching products:", error);
@@ -122,8 +125,8 @@ function StockInVoucherPage() {
     const handlePreview = async () => {
         try {
             // جلب فواتير الشراء لتعيين أسعار المنتجات
-            const selectedInvoice = await axios.get(
-                `${API_BASE_URL}PurchaseInvoice`
+            const selectedInvoice = await axiosInstance.get(
+                `PurchaseInvoice`
             );
             const productPriceMap = {};
             selectedInvoice.data?.$values?.forEach((invoice) => {
@@ -133,7 +136,7 @@ function StockInVoucherPage() {
             });
 
             // جلب سندات صرف المخزون
-            const response = await axios.get(`${API_BASE_URL}StockOutVoucher`);
+            const response = await axiosInstance.get(`StockOutVoucher`);
             const allStockOutVouchers = response.data?.$values || [];
 
             if (allStockOutVouchers.length === 0) {
@@ -192,8 +195,8 @@ function StockInVoucherPage() {
         };
 
         try {
-            const response = await axios.post(
-                `${API_BASE_URL}Customers`,
+            const response = await axiosInstance.post(
+                `Customers`,
                 newCustomer
             );
             setCustomers([...customers, response.data]);
@@ -204,33 +207,22 @@ function StockInVoucherPage() {
     };
 
     // دالة إضافة عنصر للجدول (من مستودع واحد، لنفس العميل المختار)
+    // ✅ دالة إضافة عنصر لسند الصرف
+    // ✅ دالة إضافة عنصر
     const handleAddItem = () => {
-        if (
-            !selectedProduct ||
-            !selectedCustomer ||
-            !selectedWarehouse ||
-            quantity <= 0
-        ) {
-            alert(
-                "⚠️ رجاءً قم بتحديد الصنف والمشتري والمستودع وأدخل كمية أكبر من 0."
-            );
+        if (!selectedProduct || !selectedCustomer || !selectedWarehouse || quantity <= 0) {
+            alert("⚠️ رجاءً قم بتحديد الصنف والمشتري والمستودع وأدخل كمية أكبر من 0.");
             return;
         }
 
-        const product = products.find(
-            (p) => p.id.toString() === selectedProduct.toString()
-        );
-        const customer = customers.find(
-            (c) => c.id.toString() === selectedCustomer.toString()
-        );
-        const warehouse = warehouses.find(
-            (w) => w.id.toString() === selectedWarehouse.toString()
-        );
+        const product = products.find((p) => p.id === parseInt(selectedProduct));
+        const customer = customers.find((c) => c.id.toString() === selectedCustomer.toString());
+        const warehouse = warehouses.find((w) => w.id.toString() === selectedWarehouse.toString());
         const productPrice = product?.price || 0;
         const totalCost = Number(quantity) * productPrice;
 
         const newItem = {
-            productId: selectedProduct,
+            productId: selectedProduct.id, 
             customerId: selectedCustomer,
             warehouseId: selectedWarehouse,
             quantity: Number(quantity),
@@ -239,97 +231,74 @@ function StockInVoucherPage() {
             productName: product ? product.name : "",
             customer: customer ? customer.name : "",
             fromWarehouse: warehouse ? warehouse.name : "",
-            unit: product ? product.unit : "",
+            unit: product?.unit || "",
             operatingOrder: operatingOrder || "",
             notes: notes || "",
             colorCode: itemColor || ""
         };
 
         setItems([...items, newItem]);
-
-        // إعادة ضبط القيم بعد الإضافة
         setSelectedProduct("");
         setSelectedWarehouse("");
         setQuantity(0);
     };
 
-    // تنفيذ الصرف: إرسال سند به عميل واحد (customerId) وعدة بنود (items)
+    // ✅ دالة تنفيذ صرف المخزون
     const handleStockOut = async () => {
         if (items.length === 0) {
-            alert("⚠️ يجب إضافة منتجات إلى السند!");
+            alert("⚠️ يجب إضافة عناصر للسند!");
             return;
         }
-
-        if (!selectedCustomer) {
-            alert("⚠️ العميل غير محدد!");
-            return;
-        }
-
-        const customer = customers.find(
-            (c) => c.id === parseInt(selectedCustomer)
-        );
-        if (!customer) {
-            alert("⚠️ العميل غير موجود في قاعدة البيانات!");
-            return;
-        }
-
         try {
-            // جلب فواتير الشراء لحساب أسعار المنتجات
-            const selectedOutvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+            const purchaseRes = await axiosInstance.get(`PurchaseInvoice`);
             const productPriceMap = {};
-            selectedOutvoice.data?.$values.forEach((invoice) => {
-                invoice.items?.$values.forEach((item) => {
+            purchaseRes.data?.$values?.forEach(inv => {
+                inv.items?.$values?.forEach(item => {
                     productPriceMap[item.productId] = item.price;
                 });
             });
 
-            // تحضير البيانات للإرسال، مع تضمين customerId على مستوى السند
             const stockOutData = {
                 transferDate: new Date().toISOString(),
                 warehouseKeeperName: warehouseKeeperName || "غير محدد",
                 notes: notes || "",
                 operatingOrder: operatingOrder || "",
-                customerId: parseInt(selectedCustomer), // سند لعميل واحد
+                customerId: parseInt(selectedCustomer),
                 items: items.map((item) => {
-                    const unitPrice = productPriceMap[item.productId] || 0;
+                    const realProductId = item.productId; 
+                    const product = products.find(p => p.id === realProductId);
+                    const unitPrice = productPriceMap[realProductId] || 0;
+
                     return {
-                        productId: parseInt(item.productId),
+                        productId: realProductId,
                         customerId: parseInt(selectedCustomer),
                         warehouseId: parseInt(item.warehouseId),
                         quantity: item.quantity,
-                        // يمكن حساب السعر بضرب unitPrice في الكمية، أو تركه 0
                         price: unitPrice * item.quantity,
+                        unit: product?.unit || "غير محدد",
                         tax: 0,
                         discount: 0,
                         colorCode: item.colorCode || ""
                     };
-                }),
+                })
             };
 
-            console.log(
-                "🚀 البيانات المرسلة للـ API:",
-                JSON.stringify(stockOutData, null, 2)
-            );
+            console.log("🚀 سيتم إرسال:", JSON.stringify(stockOutData, null, 2));
 
-            const response = await axios.post(
-                `${API_BASE_URL}StockOutVoucher`,
-                stockOutData
-            );
+            const res = await axiosInstance.post("StockOutVoucher", stockOutData);
 
-            if (response.status === 201) {
+            if (res.status === 201) {
                 alert("✅ تم صرف المخزون بنجاح!");
                 setItems([]);
             } else {
-                throw new Error("❌ حدث خطأ أثناء صرف المخزون!");
+                alert("❌ فشل في صرف المخزون!");
             }
         } catch (error) {
-            console.error(
-                "❌ خطأ أثناء صرف المخزون:",
-                error.response ? error.response.data : error
-            );
-            alert("❌ حدث خطأ أثناء صرف المخزون!");
+            console.error("❌ خطأ أثناء الإرسال:", error.response?.data || error);
+            alert("❌ فشل في صرف المخزون! تحقق من البيانات.");
         }
     };
+
 
     // البحث عن سند صرف محدد (برقم السند)
     const handleSearch = async () => {
@@ -339,7 +308,7 @@ function StockInVoucherPage() {
         }
 
         // جلب أسعار المنتجات من فواتير الشراء
-        const selectedOutvoice = await axios.get(`${API_BASE_URL}PurchaseInvoice`);
+        const selectedOutvoice = await axiosInstance.get(`PurchaseInvoice`);
         const productPriceMap = {};
         selectedOutvoice.data?.$values.forEach((invoice) => {
             invoice.items?.$values.forEach((item) => {
@@ -348,8 +317,8 @@ function StockInVoucherPage() {
         });
 
         try {
-            const response = await axios
-                .get(`${API_BASE_URL}StockOutVoucher/${stockOutVoucherId}`)
+            const response = await axiosInstance
+                .get(`StockOutVoucher/${stockOutVoucherId}`)
                 .catch((error) => {
                     console.error("Error fetching stock Out voucher by ID:", error);
                     alert("فشل في البحث عن السند. تأكد من صحة رقم السند.");
@@ -401,6 +370,20 @@ function StockInVoucherPage() {
             alert("فشل في البحث عن السند.");
             setTableData([]);
         }
+    };
+    const handleRemoveItem = (indexToRemove) => {
+        setItems(prevItems => prevItems.filter((_, index) => index !== indexToRemove));
+    };
+    const filteredProducts = products.filter((product) =>
+        product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        product.code.toLowerCase().includes(productSearch.toLowerCase())
+    );
+
+    const handleProductSelect = (product) => {
+        setSelectedProduct(product);
+        setProductSearch(`${product.name} (${product.code})`);
+        setItemColor(product.colorCode || "");
+        setShowProductList(false);
     };
 
     return (
@@ -544,20 +527,48 @@ function StockInVoucherPage() {
                         ))}
                     </select>
                 </div>
-                <div className="col">
-                    <label>الصنف:</label>
-                    <select
-                        className="form-select mb-2"
-                        value={selectedProduct}
-                        onChange={(e) => setSelectedProduct(e.target.value)}
-                    >
-                        <option value="">اختر الصنف</option>
-                        {products.map((product) => (
-                            <option key={product.id} value={product.id}>
-                                {product.name} ({product.code})
-                            </option>
-                        ))}
-                    </select>
+                <div className="row mb-3">
+                    <div className="col-md-6 position-relative">
+                        <label>عرض الصنف :</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="أكتب أسم او كود الصنف"
+                            value={productSearch}
+                            onChange={(e) => {
+                                setProductSearch(e.target.value);
+                                setShowProductList(true);
+                            }}
+                            onFocus={() => setShowProductList(true)}
+                        />
+                            {showProductList && (
+                                <ul className="list-group position-absolute w-100 z-3" style={{ maxHeight: "200px", overflowY: "auto" }}>
+                                    {filteredProducts.length > 0 ? (
+                                        filteredProducts.map((product) => (
+                                            <li
+                                                key={product.id}
+                                                className="list-group-item list-group-item-action"
+                                                onClick={() => handleProductSelect(product)}
+                                                style={{ cursor: "pointer" }}
+                                            >
+                                                {product.name} ({product.code})
+                                            </li>
+                                        ))
+                                    ) : (
+                                        <li className="list-group-item text-muted">لا يوجد نتائج</li>
+                                    )}
+                                </ul>
+                            )}
+                    </div>
+                    <div className="col-md-6">
+                        <label>رقم الصنف:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={selectedProduct?.code || ""}
+                            readOnly
+                        />
+                    </div>
                 </div>
             </div>
             <div className="row mb-3">
@@ -618,6 +629,9 @@ function StockInVoucherPage() {
                                 <td>{item.fromWarehouse}</td>
                                 <td>{item.quantity}</td>
                                 <td>{item.totalCost}</td>
+                                <td>
+                                    <button className="btn btn-sm btn-danger" onClick={() => handleRemoveItem(index)}>🗑 حذف</button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

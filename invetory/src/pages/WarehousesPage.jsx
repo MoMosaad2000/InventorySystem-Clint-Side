@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import axiosInstance from "../utils/axiosInstance";
+
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function WarehousesPage() {
@@ -13,7 +14,7 @@ function WarehousesPage() {
     }, []);
     const fetchWarehouses = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}warehouses`);
+            const response = await axiosInstance.get(`warehouses`);
             const warehousesData = response.data?.$values || [];
 
             const updatedWarehouses = warehousesData.map(warehouse => ({
@@ -36,7 +37,7 @@ function WarehousesPage() {
     const handleAddWarehouse = async () => {
         if (!newWarehouse) return;
         try {
-            await axios.post(`${API_BASE_URL}warehouses`, { name: newWarehouse });
+            await axiosInstance.post(`warehouses`, { name: newWarehouse });
             fetchWarehouses();
             setNewWarehouse("");
         } catch (error) {

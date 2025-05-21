@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 function SubCategoriesPage() {
@@ -17,7 +17,7 @@ function SubCategoriesPage() {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axiosInstance.get(`categories`);
             const data = response.data?.$values || [];
             setCategories(data);
         } catch (error) {
@@ -28,7 +28,7 @@ function SubCategoriesPage() {
 
     const fetchSubCategories = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}subcategories`);
+            const response = await axiosInstance.get(`subcategories`);
             const data = response.data?.$values || [];
             setSubCategories(data);
         } catch (error) {
@@ -40,7 +40,7 @@ function SubCategoriesPage() {
     const handleAddSubCategory = async () => {
         if (!newSubCategory || !selectedCategory) return;
         try {
-            await axios.post(`${API_BASE_URL}subcategories`, { name: newSubCategory, categoryId: selectedCategory });
+            await axiosInstance.post(`subcategories`, { name: newSubCategory, categoryId: selectedCategory });
             fetchSubCategories();
             setNewSubCategory("");
         } catch (error) {
