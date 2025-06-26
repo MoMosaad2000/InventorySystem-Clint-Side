@@ -13,7 +13,8 @@ import SalesOrderPage from "./pages/SalesOrderPage";
 import InventoryReport from "./pages/InventoryReport";
 import PurchaseReportPage from "./pages/PurchaseReportPage";
 import InvoicePDF from "./pages/InvoicePDF";
-
+import FinalProductForm from "./pages/FinalProductForm ";
+import OperationOrderPage from "./pages/OperationOrderPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
@@ -36,6 +37,8 @@ function App() {
                         <li className="nav-item"><Link className="nav-link" to="/Inventory-report">تقرير جرد المخزن</Link></li>
                         <li className="nav-item"><Link className="nav-link" to="/Purchase-report">تقرير مشتريات</Link></li>
                         <li className="nav-item"><Link className="nav-link" to="/Sales-Order">أمر بيع</Link></li>
+                        <li className="nav-item"><Link className="nav-link" to="/Final-product">تكويد المنتج</Link></li>
+                        <li className="nav-item"><Link className="nav-link" to="/Operation-order"> أوامر التشغيل</Link></li>
                     </ul>
                 </nav>
 
@@ -55,6 +58,8 @@ function App() {
                         <Route path="/Purchase-report" element={<PurchaseReportPage />} />
                         <Route path="/Sales-Order" element={<SalesOrderPage />} />
                         <Route path="/invoice-pdf" element={<InvoicePDF />} />
+                        <Route path="/Final-product" element={<FinalProductForm />} />
+                        <Route path="/Operation-order" element={<OperationOrderPage />} />
                     </Routes>
                 </main>
 
